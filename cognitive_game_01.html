@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>기억력 테스트 - 숫자 맞추기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .difficulty-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .difficulty-btn.easy {
+            background: #48bb78;
+            color: white;
+        }
+
+        .difficulty-btn.medium {
+            background: #ed8936;
+            color: white;
+        }
+
+        .difficulty-btn.hard {
+            background: #f56565;
+            color: white;
+        }
+
+        .difficulty-btn.active {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .game-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .instructions {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .display-area {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .number-display {
+            font-size: 3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .timer {
+            font-size: 1.5em;
+            color: #667eea;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .start-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .feedback {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+
+        .feedback.correct {
+            color: #48bb78;
+        }
+
+        .feedback.wrong {
+            color: #f56565;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #edf2f7;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎮 기억력 테스트</h1>
+
+        <div class="difficulty-selector">
+            <button class="difficulty-btn easy active" data-difficulty="easy">쉬움</button>
+            <button class="difficulty-btn medium" data-difficulty="medium">보통</button>
+            <button class="difficulty-btn hard" data-difficulty="hard">어려움</button>
+        </div>
+
+        <div class="game-area">
+            <p class="instructions">1. 숫자가 3초간 보입니다.</p>
+            <p class="instructions">2. 숫자를 기억하세요!</p>
+            <p class="instructions">3. 숫자를 다시 입력하세요.</p>
+
+            <div class="display-area">
+                <div class="number-display" id="numberDisplay">-</div>
+                <div class="timer" id="timer">준비</div>
+            </div>
+
+            <div class="controls">
+                <div class="feedback" id="feedback"></div>
+                <input type="number" id="userInput" placeholder="숫자 입력" class="start-btn" style="text-align: center; padding: 10px;">
+                <button class="start-btn" id="startBtn">시작하기</button>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">점수</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="streak">0</div>
+                    <div class="stat-label">연속</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="games">0</div>
+                    <div class="stat-label">게임</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const difficulties = {
+            easy: { digits: 3, duration: 3000 },
+            medium: { digits: 5, duration: 5000 },
+            hard: { digits: 7, duration: 7000 }
+        };
+
+        let currentDifficulty = 'easy';
+        let score = 0;
+        let streak = 0;
+        let gamesPlayed = 0;
+        let currentNumber = '';
+        let isPlaying = false;
+
+        const numberDisplay = document.getElementById('numberDisplay');
+        const timerDisplay = document.getElementById('timer');
+        const userInput = document.getElementById('userInput');
+        const startBtn = document.getElementById('startBtn');
+        const feedback = document.getElementById('feedback');
+        const scoreDisplay = document.getElementById('score');
+        const streakDisplay = document.getElementById('streak');
+        const gamesDisplay = document.getElementById('games');
+
+        // Difficulty selection
+        document.querySelectorAll('.difficulty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentDifficulty = btn.dataset.difficulty;
+            });
+        });
+
+        function generateNumber() {
+            const config = difficulties[currentDifficulty];
+            return Math.floor(Math.random() * Math.pow(10, config.digits)).toString().padStart(config.digits, '0');
+        }
+
+        function startGame() {
+            if (isPlaying) return;
+
+            isPlaying = true;
+            currentNumber = generateNumber();
+            userInput.value = '';
+            userInput.disabled = true;
+            startBtn.disabled = true;
+            feedback.textContent = '';
+            feedback.className = 'feedback';
+
+            numberDisplay.textContent = '시작';
+            timerDisplay.textContent = `${difficulties[currentDifficulty].duration / 1000}초`;
+
+            let remainingTime = difficulties[currentDifficulty].duration;
+
+            const countdown = setInterval(() => {
+                remainingTime -= 100;
+                timerDisplay.textContent = `${(remainingTime / 1000).toFixed(1)}초`;
+
+                if (remainingTime <= 0) {
+                    clearInterval(countdown);
+                    numberDisplay.textContent = currentNumber;
+                    timerDisplay.textContent = '입력하세요!';
+                    userInput.disabled = false;
+                    userInput.focus();
+                }
+            }, 100);
+        }
+
+        function checkAnswer() {
+            const userAnswer = userInput.value;
+
+            if (userAnswer === currentNumber) {
+                score += 10 + streak * 2;
+                streak++;
+                gamesPlayed++;
+
+                feedback.textContent = `✅ 정답! +${10 + streak * 2}점`;
+                feedback.className = 'feedback correct';
+
+                setTimeout(() => {
+                    numberDisplay.textContent = '-';
+                    timerDisplay.textContent = '준비';
+                    userInput.disabled = true;
+                    startBtn.disabled = false;
+                }, 1500);
+
+                confettiEffect();
+            } else {
+                streak = 0;
+                feedback.textContent = `❌ 오답! 정답은 ${currentNumber}`;
+                feedback.className = 'feedback wrong';
+
+                setTimeout(() => {
+                    numberDisplay.textContent = '-';
+                    timerDisplay.textContent = '준비';
+                    userInput.value = '';
+                    userInput.disabled = true;
+                    startBtn.disabled = false;
+                }, 2000);
+            }
+
+            updateStats();
+        }
+
+        function updateStats() {
+            scoreDisplay.textContent = score;
+            streakDisplay.textContent = streak;
+            gamesDisplay.textContent = gamesPlayed;
+        }
+
+        function confettiEffect() {
+            for (let i = 0; i < 50; i++) {
+                createConfetti();
+            }
+        }
+
+        function createConfetti() {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+
+            const colors = ['#f56565', '#48bb78', '#ed8936', '#667eea', '#764ba2'];
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.top = '-10px';
+            confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+            confetti.style.width = Math.random() * 10 + 5 + 'px';
+            confetti.style.height = confetti.style.width;
+
+            document.body.appendChild(confetti);
+
+            const duration = Math.random() * 2 + 1;
+            const xEnd = (Math.random() - 0.5) * 200;
+
+            confetti.animate([
+                { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                { transform: `translateY(100vh) translateX(${xEnd}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+            ], {
+                duration: duration * 1000,
+                easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+            });
+
+            setTimeout(() => confetti.remove(), duration * 1000);
+        }
+
+        startBtn.addEventListener('click', startGame);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && isPlaying) {
+                checkAnswer();
+            }
+        });
+    </script>
+</body>
+</html>
