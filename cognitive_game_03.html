@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인지 유연성 테스트 - 단어 변형</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .difficulty-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .difficulty-btn.easy {
+            background: #48bb78;
+            color: white;
+        }
+
+        .difficulty-btn.medium {
+            background: #ed8936;
+            color: white;
+        }
+
+        .difficulty-btn.hard {
+            background: #f56565;
+            color: white;
+        }
+
+        .difficulty-btn.active {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .game-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .instructions {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+
+        .display-area {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .word-display {
+            font-size: 3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .hint {
+            color: #718096;
+            font-size: 0.9em;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.4);
+        }
+
+        .start-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .options-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #333;
+        }
+
+        .option-btn:hover {
+            border-color: #4facfe;
+            background: #f0f9ff;
+            transform: translateY(-2px);
+        }
+
+        .option-btn.correct {
+            background: #48bb78;
+            border-color: #48bb78;
+            color: white;
+        }
+
+        .option-btn.wrong {
+            background: #f56565;
+            border-color: #f56565;
+            color: white;
+        }
+
+        .feedback {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            min-height: 2em;
+        }
+
+        .feedback.correct {
+            color: #48bb78;
+        }
+
+        .feedback.wrong {
+            color: #f56565;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            transition: width 0.5s ease;
+        }
+
+        .round-indicator {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🔄 인지 유연성 테스트</h1>
+        <p class="subtitle">단어의 기본 형태를 유지하면서 변형</p>
+
+        <div class="difficulty-selector">
+            <button class="difficulty-btn easy active" data-difficulty="easy">쉬움</button>
+            <button class="difficulty-btn medium" data-difficulty="medium">보통</button>
+            <button class="difficulty-btn hard" data-difficulty="hard">어려움</button>
+        </div>
+
+        <div class="game-area">
+            <p class="instructions">
+                📋 주어진 단어의 기본 형태를 유지하면서 다른 형태로 변형하세요<br>
+                📋 같은 단어여도 다른 표현으로 표현 가능
+            </p>
+
+            <div class="display-area">
+                <div class="word-display" id="wordDisplay">준비</div>
+                <div class="hint" id="hint">Hint: 기본 형태 유지</div>
+            </div>
+
+            <div class="options-container" id="optionsContainer">
+                <button class="option-btn" data-option="차다">+ 차다 (자동차)</button>
+                <button class="option-btn" data-option="길다">+ 길다 (길드)</button>
+                <button class="option-btn" data-option="만들다">+ 만들다 (만들꾸)</button>
+                <button class="option-btn" data-option="자르다">+ 자르다 (자르꾸)</button>
+            </div>
+
+            <div class="controls">
+                <button class="start-btn" id="startBtn">시작하기</button>
+                <div class="feedback" id="feedback"></div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">점수</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="accuracy">0%</div>
+                    <div class="stat-label">정확도</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="round">1/10</div>
+                    <div class="stat-label">라운드</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const wordVariations = [
+            { base: "차다", variations: ["차꾸", "차나", "차꿉", "차새"] },
+            { base: "길다", variations: ["길꾸", "길나", "길꿉", "길새"] },
+            { base: "만들다", variations: ["만들꾸", "만들나", "만들꿉", "만들새"] },
+            { base: "자르다", variations: ["자르꾸", "자르나", "자르꿉", "자르새"] },
+            { base: "먹다", variations: ["먹꾸", "먹나", "먹꿉", "먹새"] },
+            { base: "자다", variations: ["자꾸", "자나", "자꿉", "자새"] },
+            { base: "놀다", variations: ["놀꾸", "놀나", "놀꿉", "놀새"] },
+            { base: "보다", variations: ["보꾸", "보나", "보꿉", "보새"] },
+            { base: "가다", variations: ["가꾸", "가나", "가꿉", "가새"] },
+            { base: "앉다", variations: ["앉꾸", "앉나", "앉꿉", "앉새"] },
+            { base: "일어나다", variations: ["일어나꾸", "일어나나", "일어나꿉", "일어나새"] },
+            { base: "말하다", variations: ["말하꾸", "말하나", "말하꿉", "말하새"] },
+            { base: "쓰다", variations: ["쓰꾸", "쓰나", "쓰꿉", "쓰새"] },
+            { base: "묻다", variations: ["묻꾸", "묻나", "묻꿉", "묻새"] },
+            { base: "좋아하다", variations: ["좋아하꾸", "좋아하나", "좋아하꿉", "좋아하새"] }
+        ];
+
+        const difficulties = {
+            easy: { rounds: 5, showHint: true },
+            medium: { rounds: 10, showHint: false },
+            hard: { rounds: 15, showHint: false }
+        };
+
+        let currentDifficulty = 'easy';
+        let score = 0;
+        let correctAnswers = 0;
+        let totalAnswers = 0;
+        let currentRound = 0;
+        let isPlaying = false;
+
+        const wordDisplay = document.getElementById('wordDisplay');
+        const hint = document.getElementById('hint');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const startBtn = document.getElementById('startBtn');
+        const feedback = document.getElementById('feedback');
+        const scoreDisplay = document.getElementById('score');
+        const accuracyDisplay = document.getElementById('accuracy');
+        const roundDisplay = document.getElementById('round');
+        const progressFill = document.getElementById('progressFill');
+        const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+
+        difficultyBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                difficultyBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentDifficulty = btn.dataset.difficulty;
+            });
+        });
+
+        function selectRandomWord() {
+            return wordVariations[Math.floor(Math.random() * wordVariations.length)];
+        }
+
+        function generateOptions(wordData) {
+            let options = [wordData.base];
+            
+            // Add 3 correct variations
+            options.push(...wordData.variations.slice(0, 3));
+
+            // Add 3 wrong options
+            const otherWords = wordVariations.filter(w => w.base !== wordData.base);
+            const wrongOptions = [];
+            for (let i = 0; i < 3 && otherWords.length > 0; i++) {
+                const randomIndex = Math.floor(Math.random() * otherWords.length);
+                wrongOptions.push(otherWords[randomIndex].base);
+                otherWords.splice(randomIndex, 1);
+            }
+            options.push(...wrongOptions);
+
+            // Shuffle options
+            return options.sort(() => Math.random() - 0.5);
+        }
+
+        function startGame() {
+            if (isPlaying) return;
+
+            isPlaying = true;
+            currentRound = 0;
+            score = 0;
+            correctAnswers = 0;
+            totalAnswers = 0;
+
+            startBtn.disabled = true;
+            feedback.textContent = '';
+            feedback.className = 'feedback';
+
+            startRound();
+        }
+
+        function startRound() {
+            const config = difficulties[currentDifficulty];
+
+            if (currentRound >= config.rounds) {
+                endGame();
+                return;
+            }
+
+            currentRound++;
+            const wordData = selectRandomWord();
+            const options = generateOptions(wordData);
+
+            wordDisplay.textContent = wordData.base;
+            hint.textContent = config.showHint ? 'Hint: 기본 형태를 유지하세요' : '';
+            
+            // Create option buttons
+            optionsContainer.innerHTML = '';
+            options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = `+ ${option}`;
+                btn.dataset.option = option;
+                btn.addEventListener('click', () => checkAnswer(option, wordData));
+                optionsContainer.appendChild(btn);
+            });
+
+            updateStats();
+            updateProgress();
+        }
+
+        function checkAnswer(choice, wordData) {
+            totalAnswers++;
+            
+            // Check if the choice is a correct variation
+            const isCorrect = wordData.variations.includes(choice);
+
+            if (isCorrect) {
+                score += 10;
+                correctAnswers++;
+                feedback.textContent = '✅ 정답! +10점';
+                feedback.className = 'feedback correct';
+            } else {
+                feedback.textContent = `❌ 오답! 정답: ${wordData.base}`;
+                feedback.className = 'feedback wrong';
+            }
+
+            // Highlight correct/incorrect buttons
+            const buttons = optionsContainer.querySelectorAll('.option-btn');
+            buttons.forEach(btn => {
+                if (btn.dataset.option === choice) {
+                    btn.classList.add(isCorrect ? 'correct' : 'wrong');
+                }
+            });
+
+            updateStats();
+            updateProgress();
+
+            setTimeout(() => {
+                startRound();
+            }, 1500);
+        }
+
+        function updateStats() {
+            scoreDisplay.textContent = score;
+            const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
+            accuracyDisplay.textContent = accuracy + '%';
+            roundDisplay.textContent = `${currentRound}/${difficulties[currentDifficulty].rounds}`;
+        }
+
+        function updateProgress() {
+            const config = difficulties[currentDifficulty];
+            const progress = (currentRound / config.rounds) * 100;
+            progressFill.style.width = progress + '%';
+        }
+
+        function endGame() {
+            isPlaying = false;
+            startBtn.disabled = false;
+
+            const config = difficulties[currentDifficulty];
+            const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
+
+            let message = '';
+            if (accuracy >= 80) {
+                message = '🎉 훌륭해요! 인지 유연성이 우수해요!';
+            } else if (accuracy >= 60) {
+                message = '👍 괜찮아요! 조금 더 연습하면 더 좋아질 거예요.';
+            } else {
+                message = '💪 연습이 필요해요! 조금만 더 노력해보세요!';
+            }
+
+            feedback.innerHTML = `<strong>${message}</strong><br>최종 점수: ${score}점<br>정확도: ${accuracy}%`;
+            hint.textContent = '게임 종료';
+            updateProgress();
+        }
+
+        startBtn.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
