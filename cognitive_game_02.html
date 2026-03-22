@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주의력 테스트 - 같은 패턴 찾기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .difficulty-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .difficulty-btn.easy {
+            background: #48bb78;
+            color: white;
+        }
+
+        .difficulty-btn.medium {
+            background: #ed8936;
+            color: white;
+        }
+
+        .difficulty-btn.hard {
+            background: #f56565;
+            color: white;
+        }
+
+        .difficulty-btn.active {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .game-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .instructions {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+
+        .display-area {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .pattern-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .pattern-card {
+            width: 120px;
+            height: 120px;
+            border: 3px solid #e2e8f0;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pattern-card:hover {
+            transform: scale(1.05);
+        }
+
+        .pattern-card.same {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .pattern-card.different {
+            border-color: #f56565;
+            background: #fff5f5;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(240, 147, 251, 0.4);
+        }
+
+        .start-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .feedback {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            min-height: 2em;
+        }
+
+        .feedback.correct {
+            color: #48bb78;
+        }
+
+        .feedback.wrong {
+            color: #f56565;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            transition: width 0.5s ease;
+        }
+
+        .round-indicator {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎯 주의력 테스트</h1>
+        <p class="subtitle">두 패턴이 같은지 다른지 판단하세요</p>
+
+        <div class="difficulty-selector">
+            <button class="difficulty-btn easy active" data-difficulty="easy">쉬움</button>
+            <button class="difficulty-btn medium" data-difficulty="medium">보통</button>
+            <button class="difficulty-btn hard" data-difficulty="hard">어려움</button>
+        </div>
+
+        <div class="game-area">
+            <p class="instructions">
+                📋 한쪽 패턴을 기억하세요<br>
+                📋 다른 쪽 패턴을 확인하세요<br>
+                📋 두 패턴이 같은지 "같음" / "다름"을 선택하세요
+            </p>
+
+            <div class="display-area">
+                <div class="pattern-container">
+                    <div class="pattern-card" id="pattern1">✦</div>
+                    <div class="pattern-card" id="pattern2">◈</div>
+                </div>
+                <div class="round-indicator" id="roundIndicator">준비 중...</div>
+            </div>
+
+            <div class="controls">
+                <button class="start-btn" id="startBtn">시작하기</button>
+                <div class="feedback" id="feedback"></div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="score-board">
+                <div class="stat-item">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">점수</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="accuracy">0%</div>
+                    <div class="stat-label">정확도</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="round">1/10</div>
+                    <div class="stat-label">라운드</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const patterns = ['✦', '◈', '◉', '○', '□', '◇', '□', '▢', '▣', '▤', '▥', '▦', '▩', '❋', '❊', '❉', '❈', '❉', '✟', '✠', '✡', '✢', '✣', '✤', '✥'];
+
+        const difficulties = {
+            easy: { duration: 2000, rounds: 5 },
+            medium: { duration: 3000, rounds: 10 },
+            hard: { duration: 4000, rounds: 15 }
+        };
+
+        let currentDifficulty = 'easy';
+        let score = 0;
+        let correctAnswers = 0;
+        let totalAnswers = 0;
+        let currentRound = 0;
+        let currentPattern1 = '';
+        let currentPattern2 = '';
+        let isShowing = false;
+        let isPlaying = false;
+
+        const pattern1 = document.getElementById('pattern1');
+        const pattern2 = document.getElementById('pattern2');
+        const roundIndicator = document.getElementById('roundIndicator');
+        const startBtn = document.getElementById('startBtn');
+        const feedback = document.getElementById('feedback');
+        const scoreDisplay = document.getElementById('score');
+        const accuracyDisplay = document.getElementById('accuracy');
+        const roundDisplay = document.getElementById('round');
+        const progressFill = document.getElementById('progressFill');
+        const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+
+        difficultyBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                difficultyBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentDifficulty = btn.dataset.difficulty;
+            });
+        });
+
+        function generatePattern() {
+            return patterns[Math.floor(Math.random() * patterns.length)];
+        }
+
+        function startGame() {
+            if (isPlaying) return;
+
+            isPlaying = true;
+            currentRound = 0;
+            score = 0;
+            correctAnswers = 0;
+            totalAnswers = 0;
+
+            startBtn.disabled = true;
+            feedback.textContent = '';
+            feedback.className = 'feedback';
+
+            startRound();
+        }
+
+        function startRound() {
+            const config = difficulties[currentDifficulty];
+
+            if (currentRound >= config.rounds) {
+                endGame();
+                return;
+            }
+
+            currentRound++;
+            isShowing = true;
+
+            pattern1.textContent = '기억하세요!';
+            pattern2.textContent = generatePattern();
+            currentPattern1 = generatePattern();
+            currentPattern2 = generatePattern();
+
+            roundIndicator.textContent = `라운드 ${currentRound}/${config.rounds}`;
+            updateProgress();
+
+            setTimeout(() => {
+                pattern1.textContent = currentPattern1;
+                pattern2.textContent = currentPattern2;
+                isShowing = false;
+            }, config.duration);
+        }
+
+        function checkAnswer(choice) {
+            if (isShowing) return;
+
+            totalAnswers++;
+            const patternsMatch = currentPattern1 === currentPattern2;
+
+            let correct = false;
+            if (choice === 'same' && patternsMatch) correct = true;
+            if (choice === 'different' && !patternsMatch) correct = true;
+
+            if (correct) {
+                score += 10;
+                correctAnswers++;
+                feedback.textContent = '✅ 정답! +10점';
+                feedback.className = 'feedback correct';
+            } else {
+                feedback.textContent = `❌ 오답! 정답은 ${patternsMatch ? '같음' : '다름'}`;
+                feedback.className = 'feedback wrong';
+            }
+
+            updateStats();
+            updateProgress();
+
+            setTimeout(() => {
+                startRound();
+            }, 1500);
+        }
+
+        function updateStats() {
+            scoreDisplay.textContent = score;
+            const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
+            accuracyDisplay.textContent = accuracy + '%';
+            roundDisplay.textContent = `${currentRound}/${difficulties[currentDifficulty].rounds}`;
+        }
+
+        function updateProgress() {
+            const config = difficulties[currentDifficulty];
+            const progress = (currentRound / config.rounds) * 100;
+            progressFill.style.width = progress + '%';
+        }
+
+        function endGame() {
+            isPlaying = false;
+            startBtn.disabled = false;
+
+            const config = difficulties[currentDifficulty];
+            const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
+
+            let message = '';
+            if (accuracy >= 80) {
+                message = '🎉 훌륭해요! 정신 집중력이 우수해요!';
+            } else if (accuracy >= 60) {
+                message = '👍 괜찮아요! 조금 더 연습하면 더 좋아질 거예요.';
+            } else {
+                message = '💪 연습이 필요해요! 조금만 더 노력해보세요!';
+            }
+
+            feedback.innerHTML = `<strong>${message}</strong><br>최종 점수: ${score}점<br>정확도: ${accuracy}%`;
+            roundIndicator.textContent = '게임 종료';
+            updateProgress();
+        }
+
+        startBtn.addEventListener('click', startGame);
+
+        // Keypad for mobile
+        const keypad = document.createElement('div');
+        keypad.className = 'keypad';
+        keypad.innerHTML = `
+            <button class="keypad-btn same">같음</button>
+            <button class="keypad-btn different">다름</button>
+        `;
+        document.querySelector('.game-area').appendChild(keypad);
+
+        document.querySelector('.keypad').addEventListener('click', (e) => {
+            if (!isPlaying) return;
+            if (e.target.classList.contains('same')) {
+                checkAnswer('same');
+            } else if (e.target.classList.contains('different')) {
+                checkAnswer('different');
+            }
+        });
+    </script>
+</body>
+</html>
